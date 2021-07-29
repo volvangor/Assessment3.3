@@ -1,13 +1,13 @@
 // import _ from "lodash";
 import * as THREE from "three";
-import {OrbitControls} from "three/examples/jsm/controls/OrbitControls.js";
+// import {OrbitControls} from "three/examples/jsm/controls/OrbitControls.js";
 
 function getPoint() {
     let u = Math.random();
     let v = Math.random();
     let theta = u * 2.0 * Math.PI;
     let phi = Math.acos(2.0 * v - 1.0);
-    let r = Math.cbrt(Math.random() * 5);
+    let r = Math.cbrt((Math.random()*5) + 15);
     let sinTheta = Math.sin(theta);
     let cosTheta = Math.cos(theta);
     let sinPhi = Math.sin(phi);
@@ -26,11 +26,11 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 camera.position.z = 5;
-const controls = new OrbitControls();
+// const controls = new OrbitControls();
 
 const vertices = [];
 
-for (let i = 0; i < 10000; i++) {
+for (let i = 0; i < 2000; i++) {
     const coord = getPoint();
     vertices.push(coord.x, coord.y, coord.z);
 }
@@ -38,7 +38,7 @@ for (let i = 0; i < 10000; i++) {
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
 const material = new THREE.PointsMaterial({color: 0xFFFFFF});
-material.size = 0.001;
+material.size = 0.01;
 const points = new THREE.Points(geometry, material);
 scene.add(points);
 
@@ -46,8 +46,8 @@ scene.add(points);
 const animate = function () {
     requestAnimationFrame(animate);
 
-    points.rotation.x += 0.01;
-    points.rotation.y += 0.01;
+    points.rotation.x += 0.005;
+    points.rotation.y += 0.005;
 
     renderer.render(scene, camera);
 };
