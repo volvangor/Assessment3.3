@@ -1,13 +1,14 @@
 // import _ from "lodash";
 import * as THREE from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls.js";
+import {color, GUI} from "three/examples/jsm/libs/dat.gui.module.js";
 
 function getPoint() {
     let u = Math.random();
     let v = Math.random();
     let theta = u * 2.0 * Math.PI;
     let phi = Math.acos(2.0 * v - 1.0);
-    let r = Math.cbrt((Math.random()*100000000000));
+    let r = Math.cbrt((Math.random() * 100000000000));
     let sinTheta = Math.sin(theta);
     let cosTheta = Math.cos(theta);
     let sinPhi = Math.sin(phi);
@@ -18,6 +19,20 @@ function getPoint() {
     return {x: x, y: y, z: z};
 }
 
+class ColorGUIHelper {
+    constructor(object, prop) {
+        this.object = object;
+        this.prop = prop;
+    }
+
+    get value() {
+        return `#${this.object[this.prop].getHexString()}`;
+    }
+
+    set value(hexString) {
+        this.object[this.prop].set(hexString);
+    }
+}
 
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.01, 1000000);
@@ -25,7 +40,7 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
-const controls = new OrbitControls( camera, renderer.domElement );
+const controls = new OrbitControls(camera, renderer.domElement);
 camera.position.z = 50;
 controls.update();
 
@@ -38,28 +53,31 @@ for (let i = 0; i < 50000; i++) {
 
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-const material = new THREE.PointsMaterial({color: 0xFFFFFF});
-material.size = 4;
+const material = new THREE.PointsMaterial({color: new THREE.Color(0, 0, 255)});
+material.size = 5;
+material.color = new THREE.Color(255, 255, 255);
 const points = new THREE.Points(geometry, material);
 scene.add(points);
+let menu_params = {rotation_rate: 0.00001};
 
+
+const gui = new GUI();
+const pointsFolder = gui.addFolder("Points");
+pointsFolder.add(points.material, "size", 0.001, 10);
+pointsFolder.addColor(new ColorGUIHelper(material.color, "color"), "value") //
+    .name("color");
+pointsFolder.open();
+const viewFolder = gui.addFolder("View");
+viewFolder.add(menu_params, "rotation_rate", 0, 0.001);
+viewFolder.open();
 
 const animate = function () {
     requestAnimationFrame(animate);
-    points.rotation.x += 0.00001;
-    points.rotation.y += 0.00001;
+    points.rotation.x += menu_params.rotation_rate;
+    points.rotation.y += menu_params.rotation_rate;
 
     controls.update();
     renderer.render(scene, camera);
 };
 
 animate();
-
-// function component() {
-//     const element = document.createElement('div');
-//     // Lodash, now imported by this script
-//     element.innerHTML = _.join(['Hello', 'webpack'], ' ');
-//     return element;
-// }
-//
-// document.body.appendChild(component());
