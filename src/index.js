@@ -43,6 +43,17 @@ const controls = new OrbitControls(camera, renderer.domElement);
 camera.position.z = 50;
 controls.update();
 
+window.addEventListener( 'resize', onWindowResize, false );
+
+function onWindowResize(){
+
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
+
+}
+
 const vertices = [];
 vertices.push(0, 0, 0);
 for (let i = 0; i < 50000; i++) {
