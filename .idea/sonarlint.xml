@@ -4,6 +4,7 @@
     <option name="fileExclusions">
       <list>
         <option value="DIRECTORY:node_modules" />
+        <option value="FILE:dist/main.js" />
       </list>
     </option>
   </component>

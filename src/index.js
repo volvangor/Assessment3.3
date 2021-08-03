@@ -1,7 +1,6 @@
-// import _ from "lodash";
 import * as THREE from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls.js";
-import {color, GUI} from "three/examples/jsm/libs/dat.gui.module.js";
+import {GUI} from "three/examples/jsm/libs/dat.gui.module.js";
 
 function getPoint() {
     let u = Math.random();
@@ -53,9 +52,8 @@ for (let i = 0; i < 50000; i++) {
 
 const geometry = new THREE.BufferGeometry();
 geometry.setAttribute("position", new THREE.Float32BufferAttribute(vertices, 3));
-const material = new THREE.PointsMaterial({color: new THREE.Color(0, 0, 255)});
+const material = new THREE.PointsMaterial({color: "#ffffff"});
 material.size = 5;
-material.color = new THREE.Color(255, 255, 255);
 const points = new THREE.Points(geometry, material);
 scene.add(points);
 let menu_params = {rotation_rate: 0.00001};
@@ -64,8 +62,7 @@ let menu_params = {rotation_rate: 0.00001};
 const gui = new GUI();
 const pointsFolder = gui.addFolder("Points");
 pointsFolder.add(points.material, "size", 0.001, 10);
-pointsFolder.addColor(new ColorGUIHelper(material.color, "color"), "value") //
-    .name("color");
+pointsFolder.addColor(new ColorGUIHelper(material, "color"), "value")
 pointsFolder.open();
 const viewFolder = gui.addFolder("View");
 viewFolder.add(menu_params, "rotation_rate", 0, 0.001);
