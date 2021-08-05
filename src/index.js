@@ -41,20 +41,40 @@ class ColorGUIHelper {
     }
 }
 
-const scene = new THREE.Scene();
+// Camera
 const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 1000000);
-
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-const controls = new OrbitControls(camera, renderer.domElement);
 camera.position.y = 20;
 camera.position.z = 10;
 camera.lookAt(0, 10, 0);
+
+function updateCamera() {
+    camera.updateProjectionMatrix();
+}
+
+// scene
+const scene = new THREE.Scene();
+
+// renderer
+const renderer = new THREE.WebGLRenderer();
+renderer.setSize(window.innerWidth, window.innerHeight);
+document.body.appendChild(renderer.domElement);
+
+// controls
+const controls = new OrbitControls(camera, renderer.domElement);
 controls.update();
 
-window.addEventListener("resize", onWindowResize, false);
+// region Window resizing
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+}
 
+window.addEventListener("resize", onWindowResize, false);
+// endregion
+
+
+// region create play space...
 const default_x = 20;
 const default_y = 20; // how tall the walls are
 const default_z = 10;
@@ -67,6 +87,7 @@ const play_floor = new THREE.Mesh(play_floor_geometry, floor_material);
 play_floor.rotateX(-Math.PI / 2);
 play_floor.scale.x = default_x;
 play_floor.scale.y = default_z;
+play_floor.userData.ground = true;
 scene.add(play_floor);
 
 const right_wall_geometry = new THREE.PlaneGeometry(1, 1);
@@ -76,6 +97,7 @@ right_wall.scale.x = default_z;
 right_wall.scale.y = default_y;
 right_wall.position.x = default_x / 2;
 right_wall.position.y = default_y / 2;
+right_wall.userData.ground = true;
 scene.add(right_wall);
 
 const left_wall_geometry = new THREE.PlaneGeometry(1, 1);
@@ -85,6 +107,7 @@ left_wall.scale.x = default_z;
 left_wall.scale.y = default_y;
 left_wall.position.x = -(default_x / 2);
 left_wall.position.y = default_y / 2;
+left_wall.userData.ground = true;
 scene.add(left_wall);
 
 const back_wall_geometry = new THREE.PlaneGeometry(1, 1);
@@ -93,6 +116,7 @@ back_wall.scale.x = default_x;
 back_wall.scale.y = default_y;
 back_wall.position.z = -default_z / 2;
 back_wall.position.y = default_y / 2;
+back_wall.userData.ground = true;
 scene.add(back_wall);
 
 const front_wall_geometry = new THREE.PlaneGeometry(1, 1);
@@ -102,39 +126,22 @@ front_wall.scale.x = default_x;
 front_wall.scale.y = default_y;
 front_wall.position.z = default_z / 2;
 front_wall.position.y = default_y / 2;
+front_wall.userData.ground = true;
 scene.add(front_wall);
-
-
-const hemi_light = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
-// scene.add(hemi_light);
 
 const light = new THREE.PointLight(0xffffff, 0.75, 100);
 light.position.set(0, 15, 0);
 scene.add(light);
 
-
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-let menu_params = {
-    space_x: 20,
-    space_z: 10,
-    floor_y: 0,
-};
-
 function updatePlaySpace() {
-    // update the play space coords
-    play_floor.position.y = menu_params.floor_y;
-    // 1. change scale of floor
-    play_floor.scale.x = menu_params.space_x;
-    play_floor.scale.y = menu_params.space_z;
-    //   a. set x and z scale, ignore y
+    // 1. change scale and position of floor
+    //   a. set x and z scale, set y position
     // 2. change positions of planes
     //   a. halve x and z values, then use positive and negative
     //   b. set x or z positions of 4 planes, ignore y
+    play_floor.position.y = menu_params.floor_y;
+    play_floor.scale.x = menu_params.space_x;
+    play_floor.scale.y = menu_params.space_z;
     left_wall.position.x = -menu_params.space_x / 2;
     right_wall.position.x = menu_params.space_x / 2;
     back_wall.position.z = -menu_params.space_z / 2;
@@ -143,13 +150,82 @@ function updatePlaySpace() {
     right_wall.scale.x = menu_params.space_z;
     back_wall.scale.x = menu_params.space_x;
     front_wall.scale.x = menu_params.space_x;
-
 }
 
+// endregion
 
-function updateCamera() {
-    camera.updateProjectionMatrix();
+//region drag and drop objects
+const raycaster = new THREE.Raycaster();
+const mouse = new THREE.Vector2();
+const mouseMove = new THREE.Vector2();
+let draggable;
+
+function intersections(pos) {
+    raycaster.setFromCamera(pos, camera);
+    return raycaster.intersectObjects(scene.children);
 }
+
+window.addEventListener("mouseup", ev => {
+    controls.saveState()
+    if (draggable != null) {
+        console.log(`dropping draggable ${draggable.userData.name}`);
+        draggable = null;
+    }
+    controls.reset()
+    controls.enabled = true;
+});
+
+window.addEventListener("mousedown", ev => {
+    // calculate mouse position in normalized device coordinates
+    // (-1 to +1) for both components
+    mouse.x = (ev.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(ev.clientY / window.innerHeight) * 2 + 1;
+
+    // update the picking ray with the camera and mouse position
+    const found = intersections(mouse);
+
+    if (found.length > 0) {
+        if (found[0].object.userData.draggable) {
+            controls.enabled = false;
+            draggable = found[0].object;
+            console.log(`found draggable ${draggable.userData.name}`);
+        } else {
+            controls.enabled = true;
+        }
+    } else {
+        controls.enabled = true;
+    }
+});
+
+window.addEventListener("mousemove", event => {
+    mouseMove.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouseMove.y = -(event.clientY / window.innerHeight) * 2 + 1;
+});
+
+function dragObject() {
+    if (draggable != null) {
+        const found = intersections(mouseMove);
+        if (found.length > 0) {
+            for (let i = 0; i < found.length; i++) {
+                if (!found[i].object.userData.ground)
+                    continue;
+
+                let target = found[i].point;
+                draggable.position.x = target.x;
+                draggable.position.z = target.z;
+            }
+        }
+    }
+}
+
+// endregion
+
+// region GUI setup...
+let menu_params = {
+    space_x: 20,
+    space_z: 10,
+    floor_y: 0,
+};
 
 const gui = new GUI();
 const pointsFolder = gui.addFolder("Play Space");
@@ -163,13 +239,29 @@ const viewFolder = gui.addFolder("View");
 viewFolder.add(camera, "fov", 30, 175).onChange(updateCamera);
 viewFolder.open();
 
+// endregion
+
+function createSphere() {
+    let radius = 4;
+    let pos = {x: 0, y: radius + 5, z: 0};
+
+    let sphere = new THREE.Mesh(new THREE.SphereBufferGeometry(radius, 32, 32),
+        new THREE.MeshPhongMaterial({color: 0x43a1f4}));
+    sphere.position.set(pos.x, pos.y, pos.z);
+    sphere.castShadow = true;
+    sphere.receiveShadow = true;
+    scene.add(sphere);
+
+    sphere.userData.draggable = true;
+    sphere.userData.name = "SPHERE";
+}
 
 const animate = function () {
-    requestAnimationFrame(animate);
-    //console.log(camera.position)
-
-    controls.update();
+    dragObject();
     renderer.render(scene, camera);
+    requestAnimationFrame(animate);
 };
+
+createSphere();
 
 animate();
