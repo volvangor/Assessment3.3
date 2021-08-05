@@ -2,49 +2,12 @@ import * as THREE from "three";
 import {OrbitControls} from "three/examples/jsm/controls/OrbitControls.js";
 import {GUI} from "three/examples/jsm/libs/dat.gui.module.js";
 
-function rand_normal() {
-    let u = 0, v = 0;
-    while (u === 0) u = Math.random();
-    while (v === 0) v = Math.random();
-    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-}
-
-function getPoint() {
-    let u = Math.random() * 100000000000;
-    let x1 = rand_normal();
-    let x2 = rand_normal();
-    let x3 = rand_normal();
-
-    let mag = Math.sqrt(x1 * x1 + x2 * x2 + x3 * x3);
-    x1 /= mag;
-    x2 /= mag;
-    x3 /= mag;
-
-    // Math.cbrt is cube root
-    let c = Math.cbrt(u);
-
-    return {x: x1 * c, y: x2 * c, z: x3 * c};
-}
-
-class ColorGUIHelper {
-    constructor(object, prop) {
-        this.object = object;
-        this.prop = prop;
-    }
-
-    get value() {
-        return `#${this.object[this.prop].getHexString()}`;
-    }
-
-    set value(hexString) {
-        this.object[this.prop].set(hexString);
-    }
-}
 
 // Camera
-const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 1000000);
+const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.01, 1000);
 camera.position.y = 20;
-camera.position.z = 10;
+camera.position.z = 20;
+camera.position.x = -10;
 camera.lookAt(0, 10, 0);
 
 function updateCamera() {
@@ -74,13 +37,127 @@ window.addEventListener("resize", onWindowResize, false);
 // endregion
 
 
-// region create play space...
-const default_x = 20;
-const default_y = 20; // how tall the walls are
-const default_z = 10;
+// region floor texture
+const floor_texture_base = new THREE.TextureLoader().load("../textures/Concrete_017_basecolor.jpg");
+const floor_texture_normal = new THREE.TextureLoader().load("../textures/Concrete_017_normal.jpg");
+const floor_texture_rough = new THREE.TextureLoader().load("../textures/Concrete_017_roughness.jpg");
+const floor_texture_ao = new THREE.TextureLoader().load("../textures/Concrete_017_ambientOcclusion.jpg");
+const floor_texture_height = new THREE.TextureLoader().load("../textures/Concrete_017_height.jpg");
+floor_texture_base.wrapS = THREE.RepeatWrapping;
+floor_texture_base.wrapT = THREE.RepeatWrapping;
+floor_texture_normal.wrapS = THREE.RepeatWrapping;
+floor_texture_normal.wrapT = THREE.RepeatWrapping;
+floor_texture_rough.wrapS = THREE.RepeatWrapping;
+floor_texture_rough.wrapT = THREE.RepeatWrapping;
+floor_texture_ao.wrapS = THREE.RepeatWrapping;
+floor_texture_ao.wrapT = THREE.RepeatWrapping;
+floor_texture_height.wrapS = THREE.RepeatWrapping;
+floor_texture_height.wrapT = THREE.RepeatWrapping;
 
-const wall_material = new THREE.MeshStandardMaterial({color: 0xaaaaaa, side: THREE.FrontSide});
-const floor_material = new THREE.MeshStandardMaterial({color: 0xaaaaff, side: THREE.DoubleSide});
+function changeFloorWrap(x, y) {
+    floor_texture_base.repeat.set(x, y);
+    floor_texture_normal.repeat.set(x, y);
+    floor_texture_rough.repeat.set(x, y);
+    floor_texture_ao.repeat.set(x, y);
+    floor_texture_height.repeat.set(x, y);
+}
+
+// endregion
+
+// region side wall texture
+const side_wall_texture_base = new THREE.TextureLoader().load("../textures/Brick_wall_019_basecolor.jpg");
+const side_wall_texture_normal = new THREE.TextureLoader().load("../textures/Brick_wall_019_normal.jpg");
+const side_wall_texture_rough = new THREE.TextureLoader().load("../textures/Brick_wall_019_roughness.jpg");
+const side_wall_texture_ao = new THREE.TextureLoader().load("../textures/Brick_wall_019_ambientOcclusion.jpg");
+const side_wall_texture_height = new THREE.TextureLoader().load("../textures/Brick_wall_019_height.jpg");
+side_wall_texture_base.wrapS = THREE.RepeatWrapping;
+side_wall_texture_base.wrapT = THREE.RepeatWrapping;
+side_wall_texture_normal.wrapS = THREE.RepeatWrapping;
+side_wall_texture_normal.wrapT = THREE.RepeatWrapping;
+side_wall_texture_rough.wrapS = THREE.RepeatWrapping;
+side_wall_texture_rough.wrapT = THREE.RepeatWrapping;
+side_wall_texture_ao.wrapS = THREE.RepeatWrapping;
+side_wall_texture_ao.wrapT = THREE.RepeatWrapping;
+side_wall_texture_height.wrapS = THREE.RepeatWrapping;
+side_wall_texture_height.wrapT = THREE.RepeatWrapping;
+
+function changeSideWallWrap(x, y) {
+    side_wall_texture_base.repeat.set(x, y);
+    side_wall_texture_normal.repeat.set(x, y);
+    side_wall_texture_rough.repeat.set(x, y);
+    side_wall_texture_ao.repeat.set(x, y);
+    side_wall_texture_height.repeat.set(x, y);
+}
+// endregion
+
+// region wall texture
+const wall_texture_base = new THREE.TextureLoader().load("../textures/Brick_wall_019_basecolor.jpg");
+const wall_texture_normal = new THREE.TextureLoader().load("../textures/Brick_wall_019_normal.jpg");
+const wall_texture_rough = new THREE.TextureLoader().load("../textures/Brick_wall_019_roughness.jpg");
+const wall_texture_ao = new THREE.TextureLoader().load("../textures/Brick_wall_019_ambientOcclusion.jpg");
+const wall_texture_height = new THREE.TextureLoader().load("../textures/Brick_wall_019_height.jpg");
+wall_texture_base.wrapS = THREE.RepeatWrapping;
+wall_texture_base.wrapT = THREE.RepeatWrapping;
+wall_texture_normal.wrapS = THREE.RepeatWrapping;
+wall_texture_normal.wrapT = THREE.RepeatWrapping;
+wall_texture_rough.wrapS = THREE.RepeatWrapping;
+wall_texture_rough.wrapT = THREE.RepeatWrapping;
+wall_texture_ao.wrapS = THREE.RepeatWrapping;
+wall_texture_ao.wrapT = THREE.RepeatWrapping;
+wall_texture_height.wrapS = THREE.RepeatWrapping;
+wall_texture_height.wrapT = THREE.RepeatWrapping;
+
+function changeWallWrap(x, y) {
+    wall_texture_base.repeat.set(x, y);
+    wall_texture_normal.repeat.set(x, y);
+    wall_texture_rough.repeat.set(x, y);
+    wall_texture_ao.repeat.set(x, y);
+    wall_texture_height.repeat.set(x, y);
+}
+
+// endregion
+
+
+// region create play space...
+const default_x = 40;
+const default_y = 20; // how tall the walls are
+const default_z = 20;
+
+changeFloorWrap(default_x / 20, default_z / 20);
+changeSideWallWrap(default_z / 20, 1);
+changeWallWrap(default_x / 20, 1);
+
+const wall_material = new THREE.MeshStandardMaterial(
+    {
+        color: 0xffffff,
+        side: THREE.FrontSide,
+        map: wall_texture_base,
+        normalMap: wall_texture_normal,
+        roughnessMap: wall_texture_rough,
+        aoMap: wall_texture_ao,
+        displacementMap: wall_texture_height
+    });
+const side_wall_material = new THREE.MeshStandardMaterial(
+    {
+        color: 0xffffff,
+        side: THREE.FrontSide,
+        map: side_wall_texture_base,
+        normalMap: side_wall_texture_normal,
+        roughnessMap: side_wall_texture_rough,
+        aoMap: side_wall_texture_ao,
+        displacementMap: side_wall_texture_height
+    });
+const floor_material = new THREE.MeshStandardMaterial(
+    {
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        map: floor_texture_base,
+        normalMap: floor_texture_normal,
+        roughnessMap: floor_texture_rough,
+        aoMap: floor_texture_ao,
+        displacementMap: floor_texture_height
+    }
+);
 
 const play_floor_geometry = new THREE.PlaneGeometry(1, 1);
 const play_floor = new THREE.Mesh(play_floor_geometry, floor_material);
@@ -88,26 +165,29 @@ play_floor.rotateX(-Math.PI / 2);
 play_floor.scale.x = default_x;
 play_floor.scale.y = default_z;
 play_floor.userData.ground = true;
+play_floor.receiveShadow = true;
 scene.add(play_floor);
 
 const right_wall_geometry = new THREE.PlaneGeometry(1, 1);
-const right_wall = new THREE.Mesh(right_wall_geometry, wall_material);
+const right_wall = new THREE.Mesh(right_wall_geometry, side_wall_material);
 right_wall.rotateY(-Math.PI / 2);
 right_wall.scale.x = default_z;
 right_wall.scale.y = default_y;
 right_wall.position.x = default_x / 2;
 right_wall.position.y = default_y / 2;
 right_wall.userData.ground = true;
+right_wall.receiveShadow = true;
 scene.add(right_wall);
 
 const left_wall_geometry = new THREE.PlaneGeometry(1, 1);
-const left_wall = new THREE.Mesh(left_wall_geometry, wall_material);
+const left_wall = new THREE.Mesh(left_wall_geometry, side_wall_material);
 left_wall.rotateY(Math.PI / 2);
 left_wall.scale.x = default_z;
 left_wall.scale.y = default_y;
 left_wall.position.x = -(default_x / 2);
 left_wall.position.y = default_y / 2;
 left_wall.userData.ground = true;
+left_wall.receiveShadow = true;
 scene.add(left_wall);
 
 const back_wall_geometry = new THREE.PlaneGeometry(1, 1);
@@ -117,6 +197,7 @@ back_wall.scale.y = default_y;
 back_wall.position.z = -default_z / 2;
 back_wall.position.y = default_y / 2;
 back_wall.userData.ground = true;
+back_wall.receiveShadow = true;
 scene.add(back_wall);
 
 const front_wall_geometry = new THREE.PlaneGeometry(1, 1);
@@ -127,11 +208,23 @@ front_wall.scale.y = default_y;
 front_wall.position.z = default_z / 2;
 front_wall.position.y = default_y / 2;
 front_wall.userData.ground = true;
+front_wall.receiveShadow = true;
 scene.add(front_wall);
 
-const light = new THREE.PointLight(0xffffff, 0.75, 100);
+
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+const light = new THREE.PointLight(0xffffff, 0.95, 100);
 light.position.set(0, 15, 0);
+light.castShadow = true;
 scene.add(light);
+
+//Set up shadow properties for the light
+light.shadow.mapSize.width = 512;
+light.shadow.mapSize.height = 512;
+light.shadow.camera.near = 0.5;
+light.shadow.camera.far = 500;
+light.shadow.radius = 10;
 
 function updatePlaySpace() {
     // 1. change scale and position of floor
@@ -139,6 +232,9 @@ function updatePlaySpace() {
     // 2. change positions of planes
     //   a. halve x and z values, then use positive and negative
     //   b. set x or z positions of 4 planes, ignore y
+    changeFloorWrap(menu_params.space_x / 20, menu_params.space_z / 20);
+    changeSideWallWrap(menu_params.space_z / 20, 1);
+    changeWallWrap(menu_params.space_x / 20, 1);
     play_floor.position.y = menu_params.floor_y;
     play_floor.scale.x = menu_params.space_x;
     play_floor.scale.y = menu_params.space_z;
@@ -165,13 +261,13 @@ function intersections(pos) {
     return raycaster.intersectObjects(scene.children);
 }
 
-window.addEventListener("mouseup", ev => {
-    controls.saveState()
+window.addEventListener("mouseup", () => {
+    controls.saveState();
     if (draggable != null) {
         console.log(`dropping draggable ${draggable.userData.name}`);
         draggable = null;
     }
-    controls.reset()
+    controls.reset();
     controls.enabled = true;
 });
 
@@ -219,49 +315,60 @@ function dragObject() {
 }
 
 // endregion
+let radius = 4;
+let pos = {x: 5, y: radius, z: 0};
+
+let sphere = new THREE.Mesh(new THREE.SphereBufferGeometry(radius, 32, 32),
+    new THREE.MeshPhongMaterial({color: 0x43a1f4, side: THREE.FrontSide}));
+sphere.position.set(pos.x, pos.y, pos.z);
+sphere.castShadow = true;
+sphere.receiveShadow = true;
+scene.add(sphere);
+
+sphere.userData.draggable = true;
+sphere.userData.name = "SPHERE";
 
 // region GUI setup...
 let menu_params = {
-    space_x: 20,
-    space_z: 10,
+    space_x: default_x,
+    space_z: default_z,
     floor_y: 0,
 };
 
+class ColorGUIHelper {
+    constructor(object, prop) {
+        this.object = object;
+        this.prop = prop;
+    }
+
+    get value() {
+        return `#${this.object[this.prop].getHexString()}`;
+    }
+
+    set value(hexString) {
+        this.object[this.prop].set(hexString);
+    }
+}
+
 const gui = new GUI();
 const pointsFolder = gui.addFolder("Play Space");
-// pointsFolder.add(points.material, "size", 0.001, 10);
-// pointsFolder.addColor(new ColorGUIHelper(material, "color"), "value");
 pointsFolder.add(menu_params, "space_x", 10, 100).onChange(updatePlaySpace);
 pointsFolder.add(menu_params, "space_z", 10, 100).onChange(updatePlaySpace);
 pointsFolder.add(menu_params, "floor_y", 0, 10).onChange(updatePlaySpace);
 pointsFolder.open();
+const sphereFolder = gui.addFolder("Sphere");
+sphereFolder.addColor(new ColorGUIHelper(sphere.material, "color"), "value");
+sphereFolder.open();
 const viewFolder = gui.addFolder("View");
 viewFolder.add(camera, "fov", 30, 175).onChange(updateCamera);
 viewFolder.open();
 
 // endregion
 
-function createSphere() {
-    let radius = 4;
-    let pos = {x: 0, y: radius + 5, z: 0};
-
-    let sphere = new THREE.Mesh(new THREE.SphereBufferGeometry(radius, 32, 32),
-        new THREE.MeshPhongMaterial({color: 0x43a1f4}));
-    sphere.position.set(pos.x, pos.y, pos.z);
-    sphere.castShadow = true;
-    sphere.receiveShadow = true;
-    scene.add(sphere);
-
-    sphere.userData.draggable = true;
-    sphere.userData.name = "SPHERE";
-}
-
 const animate = function () {
     dragObject();
     renderer.render(scene, camera);
     requestAnimationFrame(animate);
 };
-
-createSphere();
 
 animate();
